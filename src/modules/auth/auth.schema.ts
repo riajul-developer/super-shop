@@ -13,4 +13,10 @@ export const registerSchema = object({
   ),
 });
 
+export const loginSchema = object({
+  email: pipe(string(), email('Invalid email address')),
+  password: v.string(),
+});
+
 export type registerDataType = v.InferOutput<typeof registerSchema>;
+export type loginDataType = v.InferOutput<typeof loginSchema>;

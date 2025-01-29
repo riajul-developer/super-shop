@@ -1,10 +1,12 @@
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';  
+import { BadRequestException, Injectable } from '@nestjs/common';
+import { PrismaService } from '../../config/prisma.service';  
 import * as bcrypt from 'bcrypt';
 import { User } from '@prisma/client';
+import * as jwt from 'jsonwebtoken';
 
 @Injectable()
-export class UsersService {
+export class AuthService {
+
   constructor(private prisma: PrismaService) {}
 
   // Create a user
@@ -20,7 +22,7 @@ export class UsersService {
         name,
         email,
         password: hashedPassword,
-        roleId, // Optional roleId, if provided
+        roleId,
       },
     });
 
@@ -30,23 +32,42 @@ export class UsersService {
 
   // Validate user credentials
   async validateUserCredentials(email: string, password: string): Promise<any> {
-    // Find the user by email
     const user = await this.prisma.user.findUnique({
       where: { email },
     });
-
     if (!user) {
-      return { message: 'User not found' };
+      throw new BadRequestException({
+        status: 'error',
+        message: 'Invalid credentials!',
+        data: null,
+        errors: null,
+      });
     }
-
-    // Compare the given password with the stored password hash
     const isPasswordValid = await bcrypt.compare(password, user.password);
-
-    if (isPasswordValid) {
-      return { user }; 
+    if (!isPasswordValid) {
+      throw new BadRequestException({
+        status: 'error',
+        message: 'Invalid credentials!',
+        data: null,
+        errors: null,
+      });
     }
+    const { password: _, ...userWithoutPassword } = user;
+    return { user: userWithoutPassword };
+  }
 
-    return { message: 'Invalid credentials' };
+  async generateToken(user: User): Promise<string> {
+    const payload = { 
+      id: user.id, 
+      email: user.email, 
+      name: user.name 
+    };
+    
+    const token = jwt.sign(payload, process.env.JWT_SECRET_KEY, {
+      expiresIn: '1h',
+    });
+
+    return token;
   }
 
   // Find user by email
@@ -67,7 +88,9 @@ export class UsersService {
   async updateUser(id: number, userDto: any): Promise<User> {
     const { name, email, password, roleId } = userDto;
 
-    const hashedPassword = password ? await bcrypt.hash(password, 10) : undefined;
+    const hashedPassword = password
+      ? await bcrypt.hash(password, 10)
+      : undefined;
 
     const updatedUser = await this.prisma.user.update({
       where: { id },
