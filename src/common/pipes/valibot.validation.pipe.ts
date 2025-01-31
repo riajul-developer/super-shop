@@ -2,7 +2,7 @@ import { PipeTransform, Injectable, BadRequestException } from '@nestjs/common';
 import { safeParse } from 'valibot';
 
 @Injectable()
-export default class ValidationPipe implements PipeTransform {
+export default class ValibotValidationPipe implements PipeTransform {
   constructor(private readonly schema: any) {} 
 
   transform(value: any) {
@@ -16,7 +16,7 @@ export default class ValidationPipe implements PipeTransform {
 
       throw new BadRequestException({
         status: 'error',
-        message: 'Invalid input',
+        message: 'Validation failed',
         data: null,
         errors,
       });

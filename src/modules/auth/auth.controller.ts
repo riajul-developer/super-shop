@@ -12,7 +12,7 @@ import {
   loginSchema,
   loginDataType,
 } from './auth.schema';
-import ValidationPipe from '../../common/validation.pipe';
+import ValibotValidationPipe from '../../common/pipes/valibot.validation.pipe';
 
 @Controller('auth')
 export class AuthController {
@@ -20,26 +20,25 @@ export class AuthController {
 
   @Post('register')
   async register(
-    @Body(new ValidationPipe(registerSchema)) body: registerDataType,
+    @Body(new ValibotValidationPipe(registerSchema)) body: registerDataType,
   ) {
+    const existingUser = await this.authService.findUserByEmail(body.email);
+    if (existingUser) {
+      throw new BadRequestException({
+        status: 'error',
+        message: 'Invalid input',
+        data: null,
+        errors: [
+          {
+            field: 'email',
+            message: 'This email is already in use',
+          },
+        ],
+      });
+    }
+
     try {
-      const existingUser = await this.authService.findUserByEmail(body.email);
-      if (existingUser) {
-        throw new BadRequestException({
-          status: 'error',
-          message: 'Invalid input',
-          data: null,
-          errors: [
-            {
-              field: 'email',
-              message: 'This email is already in use',
-            },
-          ],
-        });
-      }
-
       await this.authService.createUser(body);
-
       return {
         status: 'success',
         message: 'User registered successfully',
@@ -57,7 +56,9 @@ export class AuthController {
   }
 
   @Post('login')
-  async login(@Body(new ValidationPipe(loginSchema)) body: loginDataType) {
+  async login(
+    @Body(new ValibotValidationPipe(loginSchema)) body: loginDataType,
+  ) {
     try {
       const { user } = await this.authService.validateUserCredentials(
         body.email,
@@ -74,7 +75,7 @@ export class AuthController {
       };
     } catch (error) {
       if (error instanceof BadRequestException) {
-        throw error; 
+        throw error;
       }
 
       throw new InternalServerErrorException({
