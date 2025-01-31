@@ -46,8 +46,11 @@ export function conflictResponse(message?: string, errors: any = null) {
   );
 }
 
-export function successResponse(message: string, data: any = null) {
-  return createResponse('success', message, data);
+export function successResponse(message?: string, data: any = null) {
+  const errorMessage = message?.trim()
+    ? message
+    : 'Resource retrieved successfully';
+  return createResponse('success', errorMessage, data);
 }
 
 export function createdResponse(message?: string, data: any = null) {
