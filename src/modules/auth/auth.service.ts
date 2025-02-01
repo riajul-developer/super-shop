@@ -43,7 +43,7 @@ export class AuthService {
       include: {
         role: {
           include: {
-            rolePermission: {
+            rolePermissions: {
               include: {
                 permission: true,
               },
@@ -61,7 +61,7 @@ export class AuthService {
     }
     const role = user.role ? user.role.name : null;
     const permissions =
-      user.role?.rolePermission.map((rp) => rp.permission.name) || [];
+      user.role?.rolePermissions.map((rp) => rp.permission.name) || [];
     const token = await this.generateToken({
       id: user.id,
       email: user.email,

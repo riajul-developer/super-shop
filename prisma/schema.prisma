@@ -18,6 +18,10 @@ model User {
   updatedAt DateTime @updatedAt
 
   @@map("users")
+  products  Product[]
+  orders    Order[]
+  reviews   Review[]
+  cartItems Cart[]
 }
 
 model Role {
@@ -28,8 +32,8 @@ model Role {
   updatedAt   DateTime        @updatedAt                    
 
   @@map("roles")               
-  User User[]
-  rolePermission RolePermission[]
+  users           User[]
+  rolePermissions RolePermission[]
 }
 
 model Permission {
@@ -40,7 +44,7 @@ model Permission {
   updatedAt   DateTime          @updatedAt                   
 
   @@map("permissions")          
-  rolePermission RolePermission[]
+  rolePermissions RolePermission[]
 }
 
 model RolePermission {
@@ -55,4 +59,142 @@ model RolePermission {
 
   role        Role          @relation(fields: [roleId], references: [id])  
   permission  Permission    @relation(fields: [permissionId], references: [id])  
+}
+
+
+model Category {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  parentId  Int?
+  createdAt DateTime    @default(now())  
+  updatedAt DateTime    @updatedAt       
+
+  @@map("categorys")  
+  parent    Category? @relation("CategoryParent", fields: [parentId], references: [id])
+  children  Category[] @relation("CategoryParent")
+  products  Product[]
+
+}
+
+model Product {
+  id            Int         @id @default(autoincrement())
+  sellerId      Int
+  categoryId    Int?
+  name          String
+  desc          String?
+  regularPrice  Decimal? 
+  sellPrice     Decimal
+  stock         Int
+  imageUrl      String?
+  createdAt     DateTime    @default(now())  
+  updatedAt     DateTime    @updatedAt       
+
+  @@map("products")  
+  
+  seller        User        @relation(fields: [sellerId], references: [id])
+  category      Category?   @relation(fields: [categoryId], references: [id])
+  orderItems    OrderItem[]
+  reviews       Review[]
+  cartItems     Cart[]
+  productImages ProductImage[]
+}
+
+model ProductImage {
+  id        Int      @id @default(autoincrement())
+  productId Int
+  imageUrl  String
+  createdAt DateTime @default(now())  
+  updatedAt DateTime @updatedAt       
+
+  @@map("product_images")
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, imageUrl]) 
+}
+
+model Order {
+  id          Int         @id @default(autoincrement())
+  userId      Int
+  totalPrice  Decimal
+  status      OrderStatus @default(PENDING)
+  createdAt   DateTime    @default(now())  
+  updatedAt   DateTime    @updatedAt       
+
+  @@map("orders")
+  user        User        @relation(fields: [userId], references: [id])
+  orderItems  OrderItem[]
+  payments    Payment[]
+}
+
+enum OrderStatus {
+  PENDING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+model OrderItem {
+  id        Int      @id @default(autoincrement())
+  orderId   Int
+  productId Int
+  quantity  Int
+  price     Decimal
+  createdAt DateTime    @default(now())  
+  updatedAt DateTime    @updatedAt       
+
+  @@map("order_items")
+  order     Order    @relation(fields: [orderId], references: [id])
+  product   Product  @relation(fields: [productId], references: [id])
+}
+
+model Payment {
+  id                 Int            @id @default(autoincrement())
+  orderId            Int
+  paymentMethod      PaymentMethod
+  paymentStatus      PaymentStatus  @default(PENDING)
+  transactionId      String?
+  createdAt DateTime @default(now())  
+  updatedAt DateTime @updatedAt       
+
+  @@map("payments")
+  order     Order    @relation(fields: [orderId], references: [id])
+}
+
+enum PaymentMethod {
+  CREDIT_CARD
+  PAYPAL
+  CASH_ON_DELIVERY
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+model Review {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  productId Int
+  rating    Int
+  comment   String?
+  createdAt DateTime @default(now())  
+  updatedAt DateTime @updatedAt       
+
+  @@map("reviews")
+  user      User     @relation(fields: [userId], references: [id])
+  product   Product  @relation(fields: [productId], references: [id])
+}
+
+model Cart {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  productId Int
+  quantity  Int
+  createdAt DateTime @default(now())  
+  updatedAt DateTime @updatedAt       
+
+  @@map("carts")
+  user      User     @relation(fields: [userId], references: [id])
+  product   Product  @relation(fields: [productId], references: [id])
 }

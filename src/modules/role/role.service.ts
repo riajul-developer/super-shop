@@ -130,7 +130,7 @@ export class RoleService {
         id: Number(roleId),
       },
       include: {
-        rolePermission: {
+        rolePermissions: {
           include: {
             permission: true,
           },
@@ -148,7 +148,7 @@ export class RoleService {
       desc: role.desc,
       createdAt: role.createdAt,
       updatedAt: role.updatedAt,
-      permissions: role.rolePermission.map((item) => ({
+      permissions: role.rolePermissions.map((item) => ({
         id: item.permission.id,
         name: item.permission.name,
         description: item.permission.desc,
