@@ -1,4 +1,13 @@
-import { Controller, Post, Body, Get, Param, Query, Req, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Get,
+  Param,
+  Query,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { RoleService } from './role.service';
 import {
   AssignPermissionDataType,
@@ -10,12 +19,14 @@ import ValibotValidationPipe from 'src/common/pipes/valibot.validation.pipe';
 import { FastifyRequest } from 'fastify';
 import BaseUrl from 'src/common/utils/base-url.util';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
+import RoleGuard from 'src/common/guards/role.guard';
 
 @Controller('roles')
 export class RoleController {
   constructor(private readonly roleService: RoleService) {}
 
   @Post()
+  @UseGuards(JwtAuthGuard, RoleGuard('Super-admin'))
   createRole(
     @Body(new ValibotValidationPipe(createRoleSchema))
     body: CreateRoleDataType,
@@ -24,6 +35,7 @@ export class RoleController {
   }
 
   @Post('assign-permissions')
+  @UseGuards(JwtAuthGuard, RoleGuard('Super-admin'))
   assignPermissions(
     @Body(new ValibotValidationPipe(assignPermissionSchema))
     assignPermissionData: AssignPermissionDataType,
@@ -32,7 +44,7 @@ export class RoleController {
   }
 
   @Get()
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RoleGuard('Super-admin'))
   async getRoles(
     @Query('page') page: number,
     @Query('limit') limit: number,

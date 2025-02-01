@@ -1,8 +1,12 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../config/prisma.service';  
 import * as bcrypt from 'bcrypt';
 import { User } from '@prisma/client';
 import * as jwt from 'jsonwebtoken';
+import {
+  badErrorResponse,
+  successResponse,
+} from 'src/common/utils/response.util';
 
 @Injectable()
 export class AuthService {
@@ -10,14 +14,19 @@ export class AuthService {
   constructor(private prisma: PrismaService) {}
 
   // Create a user
-  async createUser(userDto: any): Promise<User> {
-    const { name, email, password, roleId } = userDto;
-
-    // Hash the password
+  async createUser(userData: any) {
+    const { name, email, password, roleId } = userData;
+    const existingUser = await this.findUserByEmail(email);
+    if (existingUser) {
+      badErrorResponse('',[
+        {
+          field: 'email',
+          message: 'This email is already in use',
+        },
+      ]);
+    }
     const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Create a new user in the database using Prisma
-    const newUser = await this.prisma.user.create({
+    await this.prisma.user.create({
       data: {
         name,
         email,
@@ -25,49 +34,58 @@ export class AuthService {
         roleId,
       },
     });
-
-    // Return the created user object
-    return newUser;
+    return successResponse('User registered successfully');
   }
 
-  // Validate user credentials
   async validateUserCredentials(email: string, password: string): Promise<any> {
     const user = await this.prisma.user.findUnique({
       where: { email },
+      include: {
+        role: {
+          include: {
+            rolePermission: {
+              include: {
+                permission: true,
+              },
+            },
+          },
+        },
+      },
     });
     if (!user) {
-      throw new BadRequestException({
-        status: 'error',
-        message: 'Invalid credentials!',
-        data: null,
-        errors: null,
-      });
+      badErrorResponse('Invalid credentials!');
     }
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
-      throw new BadRequestException({
-        status: 'error',
-        message: 'Invalid credentials!',
-        data: null,
-        errors: null,
-      });
+      badErrorResponse('Invalid credentials!');
     }
-    const { password: _, ...userWithoutPassword } = user;
-    return { user: userWithoutPassword };
+    const role = user.role ? user.role.name : null;
+    const permissions =
+      user.role?.rolePermission.map((rp) => rp.permission.name) || [];
+    const token = await this.generateToken({
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      role,
+      permissions,
+    });
+  
+    return successResponse('Login successful', {
+      token,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt
+      },
+    });
   }
-
-  async generateToken(user: User): Promise<string> {
-    const payload = { 
-      id: user.id, 
-      email: user.email, 
-      name: user.name 
-    };
-    
-    const token = jwt.sign(payload, process.env.JWT_SECRET_KEY, {
+  
+  async generateToken(payload: any): Promise<string> {
+    return jwt.sign(payload, process.env.JWT_SECRET_KEY, {
       expiresIn: '1h',
     });
-
-    return token;
   }
 
   // Find user by email
