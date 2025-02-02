@@ -32,9 +32,9 @@ async function main() {
   console.log('Super admin user created successfully');
 
   const permissions = [
-    'course_add',
-    'course_edit',
-    'course_delete',
+    'product_add',
+    'product_edit',
+    'product_delete',
     'content_add',
     'content_edit',
     'content_delete',
