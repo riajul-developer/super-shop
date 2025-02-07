@@ -8,58 +8,68 @@ import {
   pipe,
   InferOutput,
   transform,
-  minValue
+  minValue,
 } from 'valibot';
+import { File } from '@nest-lab/fastify-multer';
 
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB limit
+const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+const MAX_FILE_SIZE = 1 * 1024 * 1024; 
 
-// Custom validator for file validation with separate error messages
-const imageFile = custom<File>(
-  (file) => {
-    if (!(file instanceof File)) return false; // File is required
-    if (!/image\/(jpeg|png)/.test(file.type)) return false; // Invalid type
-    if (file.size > MAX_FILE_SIZE) return false; // File too large
-    return true; // Validation successful
+// Custom Image Validator
+const isValidImage = custom<File>(
+  (file: File) => {
+    return (
+      file &&
+      typeof file === 'object' &&
+      'mimetype' in file &&
+      'size' in file &&
+      allowedTypes.includes(file.mimetype) &&
+      file.size <= MAX_FILE_SIZE
+    );
   },
-  (file) => {
-    if (!(file instanceof File)) return 'File is required';
-    if (!/image\/(jpeg|png)/.test(file.type))
-      return 'Only JPG and PNG files are allowed';
-    if (file.size > MAX_FILE_SIZE)
-      return `File size must not exceed ${MAX_FILE_SIZE / (1024 * 1024)}MB`;
-    return ''; // No error
-  },
+  (data) => {
+    const file = data.input as File;
+    if (!file || typeof file !== 'object') {
+      return `Please upload a valid image file.`;
+    }
+
+    if (!allowedTypes.includes(file.mimetype)) {
+      return `Only JPEG, PNG, and WEBP are allowed.`;
+    }
+
+    if (file.size > MAX_FILE_SIZE) {
+      return `File is too large (${(file.size / 1024 / 1024).toFixed(2)}MB). Max allowed size is 4MB.`;
+    }
+    return `Unknown validation error.`;
+  }
 );
 
-export const productSchema = object({
+
+export const createProductSchema = object({
   name: string(),
   categoryId: optional(number()),
   desc: optional(string()),
   regularPrice: optional(number()),
   sellPrice: pipe(
     string(),
-    custom((input) => !isNaN(Number(input)), "Invalid type: Expected number but received string"),
+    custom(
+      (input) => !isNaN(Number(input)),
+      'Expected number but received string',
+    ),
     transform((input) => Number(input)),
-    minValue(0, "Sell price must be greater than or equal to 0")
+    minValue(0, 'Sell price must be greater than or equal to 0'),
   ),
   stock: pipe(
     string(),
-    custom((input) => !isNaN(Number(input)), "Invalid type: Expected number but received string"),
+    custom(
+      (input) => !isNaN(Number(input)),
+      'Expected number but received string',
+    ),
     transform((input) => Number(input)),
-    minValue(0, "Sell price must be greater than or equal to 0")
+    minValue(0, 'Sell price must be greater than or equal to 0'),
   ),
+  mainImage: optional(isValidImage),
+  featureImages: array(isValidImage),
 });
 
-// export const productSchema = pipe(
-//   object({
-//     name: string(),
-//     categoryId: optional(number()),
-//     desc: optional(string()),
-//     regularPrice: optional(number()),
-//     sellPrice: string(),
-//     stock: string(),
-//   }),
-
-// );
-
-export type ProductDataType = InferOutput<typeof productSchema>;
+export type CreateProductType = InferOutput<typeof createProductSchema>;
