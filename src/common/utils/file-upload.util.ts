@@ -8,7 +8,7 @@ export async function saveFile(uploadDir: string, file: File): Promise<string> {
     await fs.mkdir(uploadDir, { recursive: true });
 
     const uniqueFilename = `${Date.now()}-${Math.round(Math.random() * 1e9)}${extname(file.originalname)}`;
-    const filePath = `${uploadDir}/${uniqueFilename}`;
+    const filePath = `${uploadDir.slice(1)}/${uniqueFilename}`;
 
     await fs.writeFile(filePath, file.buffer);
 

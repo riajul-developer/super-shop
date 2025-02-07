@@ -1,4 +1,16 @@
-// utils/pagination.ts
+export async function calculatePagination(
+  prisma: any,
+  page: number = 1,
+  limit: number = 10,
+) {
+  const validPage = Number.isNaN(page) || page < 1 ? 1 : page;
+  const validLimit = Number.isNaN(limit) || limit < 1 ? 10 : limit;
+  const skip = (validPage - 1) * validLimit;
+
+  const total = await prisma.count(); 
+
+  return { validPage, validLimit, skip, total };
+}
 
 export function paginateData(
   page: number,
@@ -39,3 +51,5 @@ export function paginateData(
     },
   };
 }
+
+

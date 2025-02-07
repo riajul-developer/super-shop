@@ -52,11 +52,7 @@ export class RoleController {
   ) {
     const baseUrl = BaseUrl(req, '/roles');
 
-    return this.roleService.getAllRoles(
-      Number(page) || 1,
-      Number(limit) || 10,
-      baseUrl,
-    );
+    return this.roleService.getAllRoles(Number(page), Number(limit), baseUrl);
   }
 
   @Get(':id')

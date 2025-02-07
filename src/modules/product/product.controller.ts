@@ -5,7 +5,10 @@ import {
   UseInterceptors,
   UploadedFiles,
   UseGuards,
-  Req
+  Req,
+  Get,
+  Query,
+  Param,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import PermissionGuard from 'src/common/guards/permission.guard';
@@ -15,12 +18,13 @@ import { FileFieldsInterceptor } from '@nest-lab/fastify-multer';
 import { File } from '@nest-lab/fastify-multer';
 import { saveFile } from 'src/common/utils/file-upload.util';
 import { ProductService } from './product.service';
-import { FastifyRequest } from 'fastify';
 import { AuthenticatedRequest } from 'src/types/request.interface';
+import { FastifyRequest } from 'fastify';
+import BaseUrl from 'src/common/utils/base-url.util';
 
 @Controller('products')
 export class ProductController {
-  constructor(private readonly productService: ProductService) {}
+  constructor(private readonly productService: ProductService) { }
 
   @UseGuards(JwtAuthGuard)
   @Post('create')
@@ -35,7 +39,6 @@ export class ProductController {
     @Body() body: CreateProductType,
     @Req() req: AuthenticatedRequest,
   ) {
-
     body.mainImage = (files.mainImage && files.mainImage[0]) ?? null;
     body.featureImages =
       files.featureImages && files.featureImages.length > 0
@@ -57,17 +60,29 @@ export class ProductController {
         files.featureImages.map((file) => saveFile('./uploads/products', file)),
       );
     }
-    
     const sellerId = req.user?.id;
-    
     return this.productService.createProduct({ ...validatedData, sellerId });
-
-
-    return {
-      ok: true,
-      data: {
-        validatedData,
-      },
-    };
   }
+
+
+  @Get()
+  async getProducts(
+    @Query('page') page: number,
+    @Query('limit') limit: number,
+    @Req() req: FastifyRequest,
+  ) {
+    const baseUrl = BaseUrl(req, '/products');
+
+    return this.productService.getAllProducts(
+      Number(page),
+      Number(limit),
+      baseUrl,
+    );
+  }
+
+  @Get(':id')
+  getProductById(@Param('id') id: number) {
+    return this.productService.getProductById(id);
+  }
+
 }
