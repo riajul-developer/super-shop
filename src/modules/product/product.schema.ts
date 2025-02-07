@@ -68,7 +68,7 @@ export const createProductSchema = object({
     transform((input) => Number(input)),
     minValue(0, 'Sell price must be greater than or equal to 0'),
   ),
-  mainImage: optional(isValidImage),
+  mainImage: isValidImage,
   featureImages: array(isValidImage),
 });
 
