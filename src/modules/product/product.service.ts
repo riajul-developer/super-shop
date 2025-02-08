@@ -9,7 +9,7 @@ import {
   calculatePagination,
   paginateData,
 } from 'src/common/utils/pagination.util';
-import { CreateProductType } from './product.schema';
+import { CreateProductType, UpdateProductType } from './product.schema';
 
 @Injectable()
 export class ProductService {
@@ -49,6 +49,44 @@ export class ProductService {
     });
 
     return createdResponse('Product created successfully', null);
+  }
+
+  async updateProduct(
+    productId: number,
+    productData: {
+      mainImage?: string;
+      featureImages?: string[];
+    } & UpdateProductType,
+  ) {
+    await this.prisma.$transaction(async (prisma) => {
+      const updatedProduct = await prisma.product.update({
+        where: { id: Number(productId) },
+        data: {
+          name: productData.name,
+          categoryId: productData.categoryId || null,
+          desc: productData.desc || null,
+          regularPrice: productData.regularPrice || null,
+          sellPrice: productData.sellPrice,
+          stock: productData.stock,
+          imageUrl: productData.mainImage,
+        },
+      });
+
+      if (productData.featureImages && productData.featureImages.length > 0) {
+        await prisma.productImage.deleteMany({
+          where: { productId: updatedProduct.id },
+        });
+
+        await prisma.productImage.createMany({
+          data: productData.featureImages.map((imageUrl) => ({
+            productId: updatedProduct.id,
+            imageUrl,
+          })),
+          skipDuplicates: true,
+        });
+      }
+    });
+    return successResponse('Product updated successfully', null);
   }
 
   // Get all products with pagination
@@ -115,46 +153,20 @@ export class ProductService {
     return successResponse('Product retrieved successfully', product);
   }
 
-  // Update a product
-  //   async updateProduct(productId: number, updateData: UpdateProductDataType) {
-  //     const product = await this.prisma.product.findUnique({
-  //       where: { id: Number(productId) },
-  //     });
-
-  //     if (!product) {
-  //       return notFoundResponse('Product not found');
-  //     }
-
-  //     const updatedProduct = await this.prisma.product.update({
-  //       where: { id: Number(productId) },
-  //       data: {
-  //         name: updateData.name || product.name,
-  //         categoryId: updateData.categoryId || product.categoryId,
-  //         desc: updateData.desc || product.desc,
-  //         regularPrice: updateData.regularPrice || product.regularPrice,
-  //         sellPrice: updateData.sellPrice || product.sellPrice,
-  //         stock: updateData.stock || product.stock,
-  //         imageUrl: updateData.imageUrl || product.imageUrl,
-  //       },
-  //     });
-
-  //     return successResponse('Product updated successfully', updatedProduct);
-  //   }
-
   // Delete a product
-  //   async deleteProduct(productId: number) {
-  //     const product = await this.prisma.product.findUnique({
-  //       where: { id: Number(productId) },
-  //     });
+  async deleteProduct(productId: number) {
+    const product = await this.prisma.product.findUnique({
+      where: { id: Number(productId) },
+    });
 
-  //     if (!product) {
-  //       return notFoundResponse('Product not found');
-  //     }
+    if (!product) {
+      return notFoundResponse('Product not found');
+    }
 
-  //     await this.prisma.product.delete({
-  //       where: { id: Number(productId) },
-  //     });
+    await this.prisma.product.delete({
+      where: { id: Number(productId) },
+    });
 
-  //     return successResponse('Product deleted successfully');
-  //   }
+    return successResponse('Product deleted successfully');
+  }
 }

@@ -7,6 +7,7 @@ import { UserModule } from './modules/user/user.module';
 import { PermissionModule } from './modules/permission/permission.module';
 import { RoleModule } from './modules/role/role.module';
 import { ProductModule } from './modules/product/product.module';
+import { CategoryModule } from './modules/category/category.module';
 @Module({
   imports: [
     PrismaModule,
@@ -15,6 +16,7 @@ import { ProductModule } from './modules/product/product.module';
     PermissionModule,
     RoleModule,
     ProductModule,
+    CategoryModule
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -63,15 +63,16 @@ model RolePermission {
 
 
 model Category {
-  id        Int      @id @default(autoincrement())
-  name      String   @unique
+  id        Int         @id @default(autoincrement())
+  name      String      @unique
   parentId  Int?
+  imageUrl  String?  
   createdAt DateTime    @default(now())  
-  updatedAt DateTime    @updatedAt       
+  updatedAt DateTime    @updatedAt 
 
   @@map("categorys")  
-  parent    Category? @relation("CategoryParent", fields: [parentId], references: [id])
-  children  Category[] @relation("CategoryParent")
+  parent    Category?   @relation("CategoryParent", fields: [parentId], references: [id])
+  children  Category[]  @relation("CategoryParent")
   products  Product[]
 
 }

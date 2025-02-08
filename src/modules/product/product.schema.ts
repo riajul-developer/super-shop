@@ -44,8 +44,7 @@ const isValidImage = custom<File>(
   }
 );
 
-
-export const createProductSchema = object({
+const baseProductSchema = {
   name: string(),
   categoryId: optional(number()),
   desc: optional(string()),
@@ -66,10 +65,21 @@ export const createProductSchema = object({
       'Expected number but received string',
     ),
     transform((input) => Number(input)),
-    minValue(0, 'Sell price must be greater than or equal to 0'),
+    minValue(0, 'Stock must be greater than or equal to 0'),
   ),
-  mainImage: isValidImage,
-  featureImages: array(isValidImage),
+  featureImages: optional(array(isValidImage)),
+};
+
+export const createProductSchema = object({
+  ...baseProductSchema,
+  mainImage: isValidImage, 
+});
+
+export const updateProductSchema = object({
+  ...baseProductSchema,
+  mainImage: optional(isValidImage),
 });
 
 export type CreateProductType = InferOutput<typeof createProductSchema>;
+
+export type UpdateProductType = InferOutput<typeof updateProductSchema>;
