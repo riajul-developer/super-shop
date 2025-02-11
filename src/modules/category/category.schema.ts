@@ -45,12 +45,9 @@ const isValidImage = custom<File>(
   },
 );
 
-export const createCategorySchema = pipe(
+export const categorySchema = pipe(
   object({
-    name: pipe(
-      string(),
-      nonEmpty('Name cannot be empty.'), // Empty string validation
-    ),
+    name: pipe(string(), nonEmpty('Name cannot be empty.')),
     parentId: pipe(
       optional(string()),
       string(),
@@ -98,11 +95,4 @@ export const createCategorySchema = pipe(
   }),
 );
 
-export const updateCategorySchema = object({
-  name: optional(string()),
-  parentId: optional(number()),
-  image: optional(isValidImage),
-});
-
-export type CreateCategoryType = InferOutput<typeof createCategorySchema>;
-export type UpdateCategoryType = InferOutput<typeof updateCategorySchema>;
+export type CategoryType = InferOutput<typeof categorySchema>;

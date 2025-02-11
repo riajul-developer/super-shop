@@ -126,7 +126,6 @@ export class ProductController {
         files.featureImages.map((file) => saveFile('./uploads/products', file)),
       );
     }
-    
     return this.productService.updateProduct(id, validatedData);
   }
 

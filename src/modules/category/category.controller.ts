@@ -3,17 +3,24 @@ import {
   Body,
   Post,
   UseGuards,
-  Req,
   UseInterceptors,
   UploadedFile,
+  Patch,
+  Param,
+  Query,
+  Req,
+  Get,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import ValibotValidationPipe from 'src/common/pipes/valibot.validation.pipe';
-import { createCategorySchema, CreateCategoryType } from './category.schema';
+import { categorySchema, CategoryType } from './category.schema';
 import { CategoryService } from './category.service';
 import { FileInterceptor } from '@nest-lab/fastify-multer';
 import { File } from '@nest-lab/fastify-multer';
-import { saveFile } from 'src/common/utils/file.utils';
+import { deleteFile, saveFile } from 'src/common/utils/file.utils';
+import { badErrorResponse } from 'src/common/utils/response.util';
+import { FastifyRequest } from 'fastify';
+import BaseUrl from 'src/common/utils/base-url.util';
 
 @Controller('categories')
 export class CategoryController {
@@ -23,58 +30,121 @@ export class CategoryController {
   @Post('create')
   @UseGuards(JwtAuthGuard)
   @UseInterceptors(FileInterceptor('image'))
-  async create(@UploadedFile() file: File, @Body() body: CreateCategoryType) {
-    if (file) {
+  async create(@UploadedFile() file: File, @Body() body: CategoryType) {
+    if (typeof file === 'object' && file !== null) {
       body.image = file;
     }
-    const pipe = new ValibotValidationPipe(createCategorySchema);
+    const pipe = new ValibotValidationPipe(categorySchema);
     const validatedData = pipe.transform(body);
-    if (file) {
+
+    const existingCategoryName = await this.categoryService.findByName(
+      validatedData.name,
+    );
+
+    if (existingCategoryName) {
+      badErrorResponse('', [
+        {
+          field: 'name',
+          message: 'Category name must be unique',
+        },
+      ]);
+    }
+
+    if (validatedData.parentId) {
+      const existingCategory = await this.categoryService.findById(
+        validatedData.parentId,
+      );
+      if (!existingCategory) {
+        badErrorResponse('', [
+          {
+            field: 'parentId',
+            message: 'Invalid parent category ID',
+          },
+        ]);
+      }
+    }
+
+    if (typeof file === 'object' && file !== null) {
       validatedData.image = await saveFile('./uploads/categories', file);
     }
     return this.categoryService.createCategory(validatedData);
   }
 
-  //   // Update Category
-  //   @Patch('update/:id')
-  //   @UseGuards(JwtAuthGuard)
-  //   @UseInterceptors(FileInterceptor('image'))
-  //   async update(
-  //     @Param('id') id: number,
-  //     @UploadedFile() file: File,
-  //     @Body() body: UpdateCategoryType,
-  //   ) {
-  //     const existingCategory = await this.categoryService.getCategoryById(id);
+  // Update Category
+  @Patch('update/:id')
+  @UseGuards(JwtAuthGuard)
+  @UseInterceptors(FileInterceptor('image'))
+  async update(
+    @Param('id') id: number,
+    @UploadedFile() file: File,
+    @Body() body: CategoryType,
+  ) {
+    if (typeof file === 'object' && file !== null) {
+      body.image = file;
+    }
+    const pipe = new ValibotValidationPipe(categorySchema);
+    const validatedData = pipe.transform(body);
 
-  //     const pipe = new ValibotValidationPipe(updateCategorySchema);
-  //     const validatedData = pipe.transform(body);
+    const existingCategory = await this.categoryService.findById(id);
 
-  //     if (file) {
-  //       if (existingCategory && existingCategory.imageUrl) {
-  //         await deleteFile(`.${existingCategory.imageUrl}`);
-  //       }
-  //       validatedData.imageUrl = await saveFile('./uploads/categories', file);
-  //     } else {
-  //       validatedData.imageUrl = existingCategory.imageUrl;
-  //     }
+    if (!existingCategory) {
+      badErrorResponse('Category not found');
+    }
 
-  //     return this.categoryService.updateCategory(id, validatedData);
-  //   }
+    const existingCategoryName = await this.categoryService.findByName(
+      validatedData.name,
+    );
 
-  //   // Get All Categories
-  //   @Get()
-  //   async getCategories(
-  //     @Query('page') page: number,
-  //     @Query('limit') limit: number,
-  //     @Req() req: AuthenticatedRequest,
-  //   ) {
-  //     const baseUrl = BaseUrl(req, '/categories');
-  //     return this.categoryService.getAllCategories(
-  //       Number(page),
-  //       Number(limit),
-  //       baseUrl,
-  //     );
-  //   }
+    if (existingCategoryName && existingCategoryName.id !== Number(id)) {
+      badErrorResponse('', [
+        {
+          field: 'name',
+          message: 'Category name must be unique',
+        },
+      ]);
+    }
+
+    if (validatedData.parentId) {
+      const existingParentCategory = await this.categoryService.findById(
+        validatedData.parentId,
+      );
+
+      if (!existingParentCategory || existingParentCategory.id === Number(id)) {
+        badErrorResponse('', [
+          {
+            field: 'parentId',
+            message: 'Invalid parent category ID',
+          },
+        ]);
+      }
+    }
+
+    if (typeof file === 'object' && file !== null) {
+      if (existingCategory && existingCategory.imageUrl) {
+        await deleteFile(`.${existingCategory.imageUrl}`);
+      }
+      validatedData.image = await saveFile('./uploads/categories', file);
+    } else if (existingCategory && existingCategory.imageUrl) {
+      validatedData.image = existingCategory.imageUrl;
+    }
+
+    return this.categoryService.updateCategory(id, validatedData);
+  }
+
+  // Get All Categories
+  @Get()
+  async getCategories(
+    @Query('page') page: number,
+    @Query('limit') limit: number,
+    @Req() req: FastifyRequest,
+  ) {
+    const baseUrl = BaseUrl(req, '/categories');
+    return this.categoryService.getAllCategories(
+      Number(page),
+      Number(limit),
+      baseUrl,
+    );
+  }
 
   //   // Get Category by ID
   //   @Get(':id')
