@@ -28,13 +28,19 @@ import { AuthenticatedRequest } from 'src/types/request.interface';
 import { FastifyRequest } from 'fastify';
 import BaseUrl from 'src/common/utils/base-url.util';
 import {
+  badErrorResponse,
   notFoundResponse,
   successResponse,
 } from 'src/common/utils/response.util';
+import { CategoryType } from '../category/category.schema';
+import { CategoryService } from '../category/category.service';
 
 @Controller('products')
 export class ProductController {
-  constructor(private readonly productService: ProductService) {}
+  constructor(
+    private readonly productService: ProductService,
+    private readonly categoryService: CategoryService,
+  ) {}
 
   // create produce
   @Post('create')
@@ -57,6 +63,21 @@ export class ProductController {
 
     const pipe = new ValibotValidationPipe(createProductSchema);
     const validatedData = pipe.transform(body);
+
+    if (validatedData.categoryId) {
+      const existingCategory = await this.categoryService.findById(
+        validatedData.categoryId,
+      );
+
+      if (!existingCategory) {
+        badErrorResponse('', [
+          {
+            field: 'categoryId',
+            message: 'Category not found',
+          },
+        ]);
+      }
+    }
 
     if (files.mainImage && files.mainImage[0]) {
       validatedData.mainImage = await saveFile(
@@ -98,6 +119,21 @@ export class ProductController {
     }
     const pipe = new ValibotValidationPipe(updateProductSchema);
     const validatedData = pipe.transform(body);
+
+    if (validatedData.categoryId) {
+      const existingCategory = await this.categoryService.findById(
+        validatedData.categoryId,
+      );
+
+      if (!existingCategory) {
+        badErrorResponse('', [
+          {
+            field: 'categoryId',
+            message: 'Category not found',
+          },
+        ]);
+      }
+    }
 
     if (files.mainImage && files.mainImage[0]) {
       if (existingProduct) {
