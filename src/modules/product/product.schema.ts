@@ -46,7 +46,14 @@ const isValidImage = custom<File>(
 
 const baseProductSchema = {
   name: string(),
-  categoryId: optional(number()),
+  categoryId: pipe(
+    optional(string()),
+    custom(
+      (input) => !isNaN(Number(input)),
+      'Expected number but received string',
+    ),
+    transform((input) => Number(input)),
+  ),
   desc: optional(string()),
   regularPrice: optional(number()),
   sellPrice: pipe(
