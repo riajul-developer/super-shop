@@ -5,4 +5,9 @@ export const createCartSchema = object({
   quantity: pipe(number(), minValue(1, 'Quantity must be at least 1')),
 });
 
+export const updateCartSchema = object({
+  quantity: pipe(number(), minValue(1, 'Quantity must be at least 1')),
+});
+
 export type CreateCartType = InferOutput<typeof createCartSchema>;
+export type UpdateCartType = InferOutput<typeof updateCartSchema>;

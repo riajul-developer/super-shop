@@ -11,7 +11,7 @@ import {
   calculatePagination,
   paginateData,
 } from 'src/common/utils/pagination.util';
-import { CreateCartType } from './cart.schema';
+import { CreateCartType, UpdateCartType } from './cart.schema';
 
 @Injectable()
 export class CartService {
@@ -74,6 +74,31 @@ export class CartService {
     return createdResponse('Product added to cart successfully', null);
   }
 
+  // Update Cart Quantity
+  async updateCartItem(cartData: UpdateCartType, cartId: number) {
+
+    const cartItem = await this.prisma.cart.findUnique({
+      where: { id: cartId },
+      include: { product: true }, 
+    });
+    if (!cartItem) {
+      return notFoundResponse('Cart item not found');
+    }
+    if (cartItem.product.stock < cartData.quantity) {
+      return badErrorResponse('', [
+        {
+          field: 'quantity',
+          message: `Only ${cartItem.product.stock} item(s) available in stock`,
+        },
+      ]);
+    }
+    await this.prisma.cart.update({
+      where: { id: cartId },
+      data: cartData,
+    });
+    return successResponse('Cart item updated successfully');
+  }
+
   // // Get User's Cart Items
   // async getUserCart(userId: number, page: number, limit: number, baseUrl: string) {
   //   const { validPage, validLimit, skip, total } = await calculatePagination(
@@ -102,28 +127,6 @@ export class CartService {
   //     cartItems,
   //     pagination,
   //   });
-  // }
-
-  // // Update Cart Quantity
-  // async updateCartItem(cartId: number, quantity: number) {
-  //   try {
-  //     const cartItem = await this.prisma.cart.findUnique({
-  //       where: { id: cartId },
-  //     });
-
-  //     if (!cartItem) {
-  //       return notFoundResponse('Cart item not found');
-  //     }
-
-  //     await this.prisma.cart.update({
-  //       where: { id: cartId },
-  //       data: { quantity },
-  //     });
-
-  //     return successResponse('Cart item updated successfully');
-  //   } catch (error) {
-  //     return serverErrorResponse('Failed to update cart item');
-  //   }
   // }
 
   // // Remove Product from Cart
