@@ -1,5 +1,5 @@
 datasource db {
-  provider = "mysql" 
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
@@ -8,130 +8,129 @@ generator client {
 }
 
 model User {
-  id             Int           @id @default(autoincrement())
+  id             Int            @id @default(autoincrement())
   name           String
-  email          String        @unique
+  email          String         @unique
   password       String
-  roleId         Int?     
+  roleId         Int?
   commissionRate Decimal?
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
-
-  @@map("users")
-  role           Role?         @relation(fields: [roleId], references: [id])
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  role           Role?          @relation(fields: [roleId], references: [id])
   products       Product[]
   orders         Order[]
   reviews        Review[]
   cartItems      Cart[]
-  coupons        Coupon[]
-  payout         Payout[]
-  couponUsage    CouponUsage[]
+  payouts        Payout[]
+  couponUsages   CouponUsage[]
+  couponSellers  CouponSeller[]
+
+  @@map("users")
 }
 
 model Role {
-  id          Int             @id @default(autoincrement())  
-  name        String          @unique                    
-  desc        String?                
-  createdAt   DateTime        @default(now())              
-  updatedAt   DateTime        @updatedAt                    
-
-  @@map("roles")               
+  id              Int              @id @default(autoincrement())
+  name            String           @unique
+  desc            String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
   users           User[]
   rolePermissions RolePermission[]
+
+  @@map("roles")
 }
 
 model Permission {
-  id          Int               @id @default(autoincrement())  
-  name        String            @unique               
-  desc        String?         
-  createdAt   DateTime          @default(now())               
-  updatedAt   DateTime          @updatedAt                   
-
-  @@map("permissions")          
+  id              Int              @id @default(autoincrement())
+  name            String           @unique
+  desc            String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
   rolePermissions RolePermission[]
+
+  @@map("permissions")
 }
 
 model RolePermission {
-  id            Int         @id @default(autoincrement())
-  roleId        Int         
-  permissionId  Int      
-  createdAt     DateTime    @default(now())  
-  updatedAt     DateTime    @updatedAt       
+  id           Int        @id @default(autoincrement())
+  roleId       Int
+  permissionId Int
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
 
-  @@map("role_permissions")  
-  @@unique([roleId, permissionId])  
+  role         Role       @relation(fields: [roleId], references: [id])
+  permission   Permission @relation(fields: [permissionId], references: [id])
 
-  role        Role          @relation(fields: [roleId], references: [id])  
-  permission  Permission    @relation(fields: [permissionId], references: [id])  
+  @@unique([roleId, permissionId])
+  @@map("role_permissions")
 }
 
-
 model Category {
-  id        Int         @id @default(autoincrement())
-  name      String      @unique
-  parentId  Int?
-  imageUrl  String?  
-  createdAt DateTime    @default(now())  
-  updatedAt DateTime    @updatedAt 
+  id               Int              @id @default(autoincrement())
+  name             String           @unique
+  parentId         Int?
+  imageUrl         String?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  parent           Category?        @relation("CategoryParent", fields: [parentId], references: [id])
+  children         Category[]       @relation("CategoryParent")
+  products         Product[]
+  couponCategories CouponCategory[]
 
-  @@map("categorys")  
-  parent    Category?   @relation("CategoryParent", fields: [parentId], references: [id])
-  children  Category[]  @relation("CategoryParent")
-  products  Product[]
-  coupons Coupon[]
+  @@map("categorys")
 }
 
 model Product {
-  id            Int         @id @default(autoincrement())
-  sellerId      Int
-  categoryId    Int?
-  name          String
-  desc          String?
-  regularPrice  Decimal? 
-  sellPrice     Decimal
-  stock         Int
-  imageUrl      String
-  createdAt     DateTime    @default(now())  
-  updatedAt     DateTime    @updatedAt       
+  id             Int              @id @default(autoincrement())
+  sellerId       Int
+  categoryId     Int?
+  name           String
+  desc           String?
+  regularPrice   Decimal?
+  sellPrice      Decimal
+  stock          Int
+  imageUrl       String
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
 
-  @@map("products")  
-  
-  seller        User        @relation(fields: [sellerId], references: [id])
-  category      Category?   @relation(fields: [categoryId], references: [id])
-  orderItems    OrderItem[]
-  reviews       Review[]
-  cartItems     Cart[]
-  productImages ProductImage[]
-  coupons        Coupon[] 
+  seller         User            @relation(fields: [sellerId], references: [id])
+  category       Category?       @relation(fields: [categoryId], references: [id])
+  orderItems     OrderItem[]
+  reviews        Review[]
+  cartItems      Cart[]
+  productImages  ProductImage[]
   stockMovements StockMovement[]
+  couponProducts CouponProduct[]
+
+  @@map("products")
 }
 
 model ProductImage {
   id        Int      @id @default(autoincrement())
   productId Int
   imageUrl  String
-  createdAt DateTime @default(now())  
-  updatedAt DateTime @updatedAt       
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, imageUrl])
   @@map("product_images")
-  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-
-  @@unique([productId, imageUrl]) 
 }
 
 model Order {
-  id          Int         @id @default(autoincrement())
-  userId      Int
-  totalPrice  Decimal
-  status      OrderStatus @default(PENDING)
-  createdAt   DateTime    @default(now())  
-  updatedAt   DateTime    @updatedAt       
+  id           Int           @id @default(autoincrement())
+  userId       Int
+  totalPrice   Decimal
+  status       OrderStatus   @default(PENDING)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  user         User          @relation(fields: [userId], references: [id])
+  orderItems   OrderItem[]
+  payments     Payment[]
+  couponUsages CouponUsage[]
 
   @@map("orders")
-  user        User        @relation(fields: [userId], references: [id])
-  orderItems  OrderItem[]
-  payments    Payment[]
-  couponUsage CouponUsage[]
 }
 
 enum OrderStatus {
@@ -148,25 +147,25 @@ model OrderItem {
   quantity   Int
   price      Decimal
   commission Decimal?
-  createdAt  DateTime    @default(now())  
-  updatedAt  DateTime    @updatedAt       
-
-  @@map("order_items")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
   order      Order    @relation(fields: [orderId], references: [id])
   product    Product  @relation(fields: [productId], references: [id])
+
+  @@map("order_items")
 }
 
 model Payment {
-  id                 Int            @id @default(autoincrement())
-  orderId            Int
-  paymentMethod      PaymentMethod
-  paymentStatus      PaymentStatus  @default(PENDING)
-  transactionId      String?
-  createdAt DateTime @default(now())  
-  updatedAt DateTime @updatedAt       
+  id            Int           @id @default(autoincrement())
+  orderId       Int
+  paymentMethod PaymentMethod
+  paymentStatus PaymentStatus @default(PENDING)
+  transactionId String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  order         Order         @relation(fields: [orderId], references: [id])
 
   @@map("payments")
-  order     Order    @relation(fields: [orderId], references: [id])
 }
 
 enum PaymentMethod {
@@ -182,15 +181,15 @@ enum PaymentStatus {
 }
 
 model Payout {
-  id          Int      @id @default(autoincrement())
-  sellerId    Int
-  amount      Decimal
-  status      PayoutStatus @default(PENDING)
-  createdAt   DateTime  @default(now())  
-  updatedAt   DateTime  @updatedAt       
+  id        Int          @id @default(autoincrement())
+  sellerId  Int
+  amount    Decimal
+  status    PayoutStatus @default(PENDING)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  seller    User         @relation(fields: [sellerId], references: [id])
 
   @@map("payouts")
-  seller      User  @relation(fields: [sellerId], references: [id])
 }
 
 enum PayoutStatus {
@@ -206,12 +205,12 @@ model Review {
   productId Int
   rating    Int
   comment   String?
-  createdAt DateTime @default(now())  
-  updatedAt DateTime @updatedAt       
-
-  @@map("reviews")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
   user      User     @relation(fields: [userId], references: [id])
   product   Product  @relation(fields: [productId], references: [id])
+
+  @@map("reviews")
 }
 
 model Cart {
@@ -219,34 +218,34 @@ model Cart {
   userId    Int
   productId Int
   quantity  Int
-  createdAt DateTime @default(now())  
-  updatedAt DateTime @updatedAt       
-
-  @@map("carts")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
   user      User     @relation(fields: [userId], references: [id])
   product   Product  @relation(fields: [productId], references: [id])
+
+  @@map("carts")
 }
 
-
 model Coupon {
-  id            Int          @id @default(autoincrement())
-  sellerId      Int?        
-  code          String       @unique
-  discount      Decimal 
-  discountType  DiscountType @default(PERCENTAGE)
-  minOrderAmount Decimal? 
-  maxDiscount   Decimal? 
-  expiresAt     DateTime 
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
+  id             Int          @id @default(autoincrement())
+  code           String       @unique
+  discount       Decimal
+  discountType   DiscountType @default(PERCENTAGE)
+  minOrderAmount Decimal?
+  maxDiscount    Decimal?
+  expiresAt      DateTime
+  isGlobal       Boolean      @default(false)
 
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+
+  sellers      CouponSeller[] 
+  products     CouponProduct[] 
+  categories   CouponCategory[] 
+  couponUsages CouponUsage[]
   
 
   @@map("coupons")
-  products      Product[]
-  categories    Category[]
-  seller        User?      @relation(fields: [sellerId], references: [id]) 
-  couponUsage CouponUsage[]
 }
 
 enum DiscountType {
@@ -254,29 +253,62 @@ enum DiscountType {
   FIXED
 }
 
+model CouponSeller {
+  id       Int    @id @default(autoincrement())
+  couponId Int
+  sellerId Int
+  coupon   Coupon @relation(fields: [couponId], references: [id])
+  seller   User   @relation(fields: [sellerId], references: [id])
 
-model CouponUsage {
-  id        Int      @id @default(autoincrement())
-  userId    Int
-  couponId  Int
-  orderId   Int
-  discount  Decimal  
-  createdAt DateTime @default(now())  
-
-  @@map("coupon_usages")
-  user      User    @relation(fields: [userId], references: [id])
-  coupon    Coupon  @relation(fields: [couponId], references: [id])
-  order     Order   @relation(fields: [orderId], references: [id])
+  @@map("coupon_sellers")
 }
 
+model CouponProduct {
+  id        Int     @id @default(autoincrement())
+  couponId  Int
+  productId Int
+  coupon    Coupon  @relation(fields: [couponId], references: [id])
+  product   Product @relation(fields: [productId], references: [id])
+
+  @@map("coupon_products")
+}
+
+model CouponCategory {
+  id         Int      @id @default(autoincrement())
+  couponId   Int
+  categoryId Int
+  coupon     Coupon   @relation(fields: [couponId], references: [id])
+  category   Category @relation(fields: [categoryId], references: [id])
+
+  @@map("coupon_categories")
+}
+
+model CouponUsage {
+  id       Int      @id @default(autoincrement())
+  couponId Int
+  userId   Int
+  orderId  Int
+  usedAt   DateTime @default(now())
+  coupon   Coupon   @relation(fields: [couponId], references: [id])
+  user     User     @relation(fields: [userId], references: [id])
+  order    Order    @relation(fields: [orderId], references: [id])
+
+  @@map("coupon_usages")
+}
 
 model StockMovement {
-  id          Int      @id @default(autoincrement())
-  productId   Int
-  change      Int      // +ve (increase), -ve (decrease)
-  reason      String?
-  createdAt   DateTime  @default(now())  
+  id           Int               @id @default(autoincrement())
+  productId    Int
+  quantity     Int
+  movementType StockMovementType
+  createdAt    DateTime          @default(now())
+  product      Product           @relation(fields: [productId], references: [id])
 
   @@map("stock_movements")
-  product     Product  @relation(fields: [productId], references: [id])
+}
+
+enum StockMovementType {
+  ORDER_DECREASE
+  ORDER_CANCEL
+  MANUAL_ADJUSTMENT
 }
