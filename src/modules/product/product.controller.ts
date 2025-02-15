@@ -27,12 +27,7 @@ import { ProductService } from './product.service';
 import { AuthenticatedRequest } from 'src/types/request.interface';
 import { FastifyRequest } from 'fastify';
 import BaseUrl from 'src/common/utils/base-url.util';
-import {
-  badErrorResponse,
-  notFoundResponse,
-  successResponse,
-} from 'src/common/utils/response.util';
-import { CategoryType } from '../category/category.schema';
+import { badErrorResponse } from 'src/common/utils/response.util';
 import { CategoryService } from '../category/category.service';
 
 @Controller('products')

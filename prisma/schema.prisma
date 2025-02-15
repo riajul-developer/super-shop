@@ -77,7 +77,7 @@ model Category {
   products         Product[]
   couponCategories CouponCategory[]
 
-  @@map("categorys")
+  @@map("categories")
 }
 
 model Product {
