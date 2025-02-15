@@ -8,6 +8,7 @@ import {
   Query,
   Param,
   Patch,
+  Delete,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import PermissionGuard from 'src/common/guards/permission.guard';
@@ -20,6 +21,8 @@ import {
 } from './cart.schema';
 import { CartService } from './cart.service';
 import { AuthenticatedRequest } from 'src/types/request.interface';
+import { FastifyRequest } from 'fastify';
+import BaseUrl from 'src/common/utils/base-url.util';
 
 @Controller('carts')
 export class CartController {
@@ -51,5 +54,39 @@ export class CartController {
     return this.cartService.updateCartItem(validatedData, Number(cartId));
   }
 
+  // Get All Categories
+  @Get()
+  @UseGuards(JwtAuthGuard)
+  async getCartItems(
+    @Query('page') page: string,
+    @Query('limit') limit: string,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    const baseUrl = BaseUrl(req, '/carts');
+
+    const userId = req.user?.id;
+
+    return this.cartService.getUserCart(page, limit, baseUrl, userId);
+  }
+
+  // Remove cart item
+  @Delete('remove/:cartId')
+  @UseGuards(JwtAuthGuard)
+  async removeCartItem(
+    @Param('cartId') cartId: string,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    const userId = req.user?.id;
+
+    return this.cartService.removeCartItem(Number(cartId), userId);
+  }
+
+  // Clear User's Cart 
+  @Delete('clear')
+  @UseGuards(JwtAuthGuard)
+  async clearCart(@Req() req: AuthenticatedRequest) {
+    const userId = req.user.id;
+    return await this.cartService.clearUserCart(userId);
+  }
 
 }

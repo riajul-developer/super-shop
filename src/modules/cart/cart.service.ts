@@ -76,10 +76,9 @@ export class CartService {
 
   // Update Cart Quantity
   async updateCartItem(cartData: UpdateCartType, cartId: number) {
-
     const cartItem = await this.prisma.cart.findUnique({
       where: { id: cartId },
-      include: { product: true }, 
+      include: { product: true },
     });
     if (!cartItem) {
       return notFoundResponse('Cart item not found');
@@ -100,66 +99,67 @@ export class CartService {
   }
 
   // // Get User's Cart Items
-  // async getUserCart(userId: number, page: number, limit: number, baseUrl: string) {
-  //   const { validPage, validLimit, skip, total } = await calculatePagination(
-  //     this.prisma.cart,
-  //     page,
-  //     limit,
-  //     { where: { userId } },
-  //   );
+  async getUserCart(
+    page: string,
+    limit: string,
+    baseUrl: string,
+    userId: number,
+  ) {
+    const { validPage, validLimit, skip } = await calculatePagination(
+      page,
+      limit,
+    );
 
-  //   const cartItems = await this.prisma.cart.findMany({
-  //     where: { userId },
-  //     take: validLimit,
-  //     skip: skip,
-  //     include: {
-  //       product: true,
-  //     },
-  //   });
+    const cartItems = await this.prisma.cart.findMany({
+      where: { userId },
+      take: validLimit,
+      skip: skip,
+      include: {
+        product: true,
+      },
+    });
 
-  //   if (!cartItems.length) {
-  //     return notFoundResponse('Cart is empty');
-  //   }
+    if (!cartItems.length) {
+      return notFoundResponse('Cart is empty');
+    }
 
-  //   const pagination = paginateData(validPage, validLimit, total, baseUrl);
+    const totalCount = await this.prisma.cart.aggregate({
+      _count: { id: true }, 
+      where: { userId },
+    });
+  
+    const total = totalCount._count.id;
 
-  //   return successResponse('Cart retrieved successfully', {
-  //     cartItems,
-  //     pagination,
-  //   });
-  // }
+    const pagination = paginateData(validPage, validLimit, total, baseUrl);
 
-  // // Remove Product from Cart
-  // async removeCartItem(cartId: number) {
-  //   try {
-  //     const cartItem = await this.prisma.cart.findUnique({
-  //       where: { id: cartId },
-  //     });
+    return successResponse('Cart retrieved successfully', {
+      cartItems,
+      pagination,
+    });
+  }
 
-  //     if (!cartItem) {
-  //       return notFoundResponse('Cart item not found');
-  //     }
+  // Remove Product from Cart
+  async removeCartItem(cartId: number, userId: number) {
+    const cartItem = await this.prisma.cart.findUnique({
+      where: { id: cartId, userId },
+    });
 
-  //     await this.prisma.cart.delete({
-  //       where: { id: cartId },
-  //     });
+    if (!cartItem) {
+      return notFoundResponse('Cart item not found');
+    }
 
-  //     return successResponse('Cart item removed successfully');
-  //   } catch (error) {
-  //     return serverErrorResponse('Failed to remove cart item');
-  //   }
-  // }
+    await this.prisma.cart.delete({
+      where: { id: cartId },
+    });
 
-  // // Clear User's Cart
-  // async clearUserCart(userId: number) {
-  //   try {
-  //     await this.prisma.cart.deleteMany({
-  //       where: { userId },
-  //     });
+    return successResponse('Cart item removed successfully');
+  }
 
-  //     return successResponse('Cart cleared successfully');
-  //   } catch (error) {
-  //     return serverErrorResponse('Failed to clear cart');
-  //   }
-  // }
+  // Clear User's Cart
+  async clearUserCart(userId: number) {
+    await this.prisma.cart.deleteMany({
+      where: { userId },
+    });
+    return successResponse('Cart cleared successfully');
+  }
 }

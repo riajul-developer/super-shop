@@ -90,11 +90,11 @@ export class ProductService {
   }
 
   // Get all products with pagination
-  async getAllProducts(page: number, limit: number, baseUrl: string) {
+  async getAllProducts(page: string, limit: string, baseUrl: string) {
     const { validPage, validLimit, skip, total } = await calculatePagination(
-      this.prisma.product,
       page,
       limit,
+      this.prisma.product,
     );
 
     const products = await this.prisma.product.findMany({

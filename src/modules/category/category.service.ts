@@ -53,11 +53,11 @@ export class CategoryService {
   }
 
   // Get all categories with pagination
-  async getAllCategories(page: number, limit: number, baseUrl: string) {
+  async getAllCategories(page: string, limit: string, baseUrl: string) {
     const { validPage, validLimit, skip, total } = await calculatePagination(
-      this.prisma.category,
       page,
       limit,
+      this.prisma.category,
     );
 
     const categories = await this.prisma.category.findMany({

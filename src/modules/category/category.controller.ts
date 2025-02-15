@@ -134,16 +134,12 @@ export class CategoryController {
   // Get All Categories
   @Get()
   async getCategories(
-    @Query('page') page: number,
-    @Query('limit') limit: number,
+    @Query('page') page: string,
+    @Query('limit') limit: string,
     @Req() req: FastifyRequest,
   ) {
     const baseUrl = BaseUrl(req, '/categories');
-    return this.categoryService.getAllCategories(
-      Number(page),
-      Number(limit),
-      baseUrl,
-    );
+    return this.categoryService.getAllCategories(page, limit, baseUrl);
   }
 
   //   // Get Category by ID

@@ -1,13 +1,16 @@
 export async function calculatePagination(
-  prisma: any,
-  page: number = 1,
-  limit: number = 10,
+  page?: string,
+  limit?: string,
+  prisma?: any,
 ) {
-  const validPage = Number.isNaN(page) || page < 1 ? 1 : page;
-  const validLimit = Number.isNaN(limit) || limit < 1 ? 10 : limit;
+  const pageNum = Number(page);
+  const limitNum = Number(limit);
+
+  const validPage = Number.isNaN(pageNum) || pageNum < 1 ? 1 : pageNum;
+  const validLimit = Number.isNaN(limitNum) || limitNum < 1 ? 10 : limitNum;
   const skip = (validPage - 1) * validLimit;
 
-  const total = await prisma.count(); 
+  const total = prisma ? await prisma.count() : 0;
 
   return { validPage, validLimit, skip, total };
 }

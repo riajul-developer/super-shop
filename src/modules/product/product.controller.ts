@@ -162,17 +162,13 @@ export class ProductController {
 
   @Get()
   async getProducts(
-    @Query('page') page: number,
-    @Query('limit') limit: number,
+    @Query('page') page: string,
+    @Query('limit') limit: string,
     @Req() req: FastifyRequest,
   ) {
     const baseUrl = BaseUrl(req, '/products');
 
-    return this.productService.getAllProducts(
-      Number(page),
-      Number(limit),
-      baseUrl,
-    );
+    return this.productService.getAllProducts(page, limit, baseUrl);
   }
 
   @Get(':id')
