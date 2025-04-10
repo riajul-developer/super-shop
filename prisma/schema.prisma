@@ -227,22 +227,22 @@ model Cart {
 }
 
 model Coupon {
-  id             Int          @id @default(autoincrement())
-  code           String       @unique
+  id             Int               @id @default(autoincrement())
+  code           String            @unique
   discount       Decimal
-  discountType   DiscountType @default(PERCENTAGE)
+  discountType   DiscountType      @default(PERCENTAGE)
   minOrderAmount Decimal?
   maxDiscount    Decimal?
   expiresAt      DateTime
-  isGlobal       Boolean      @default(false)
+  isGlobal       Boolean           @default(false)
 
-  createdAt DateTime          @default(now())
-  updatedAt DateTime          @updatedAt
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
 
-  sellers      CouponSeller[] 
-  products     CouponProduct[] 
-  categories   CouponCategory[] 
-  couponUsages CouponUsage[]
+  sellers        CouponSeller[] 
+  products       CouponProduct[] 
+  categories     CouponCategory[] 
+  couponUsages   CouponUsage[]
   
 
   @@map("coupons")
